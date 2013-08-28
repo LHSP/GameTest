@@ -19,10 +19,29 @@ namespace GameName1
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        string[] texFilePaths;
-        Texture2D[] tiles;
+        string[] texFilePaths;              //  Array of the textures' paths
+        int[] charPos = new int[2];         //  Char position on the map (not the screen!)
+        Texture2D[] tiles;                  //  Texture array of map tiles
+        int tileSize = 42;                  //  Size of the texture tile to use (TODO: calc it based on window size)
+        Texture2D hero;                     //  Hero texure
 
-        int[,] level = { { 1, 0, 2 }, { 1, 1, 1 }, { 2, 1, 2 }, { 1, 0, 2 }, { 1, 1, 1 }, { 2, 1, 2 } };
+
+
+        int[,] level = {
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 },
+                       { 0, 1, 2 }
+                       //{ 2, 1, 2, 0, 0, 1, 2, 0, 1 }
+                       }; // Level (TODO: Read from file)
 
         public Game1()
             : base()
@@ -44,6 +63,9 @@ namespace GameName1
             texFilePaths = Directory.GetFiles("Content/Tiles/", "*.png");
             tiles = new Texture2D[texFilePaths.Length];
 
+            charPos[0] = Window.ClientBounds.Center.X - tileSize / 2;
+            charPos[1] = Window.ClientBounds.Center.Y - tileSize / 2;
+
             base.Initialize();
         }
 
@@ -55,6 +77,8 @@ namespace GameName1
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            hero = Content.Load<Texture2D>("Tiles/floor001.jpg");
 
             for (int i = 0; i < texFilePaths.Length; i++)
             {
@@ -71,6 +95,8 @@ namespace GameName1
             // TODO: Unload any non ContentManager content here
         }
 
+        KeyboardState oldState;
+
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -81,7 +107,33 @@ namespace GameName1
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            KeyboardState newState = Keyboard.GetState();
+
             // TODO: Add your update logic here
+            if (newState.IsKeyDown(Keys.W))
+            {
+                if (!oldState.IsKeyDown(Keys.W))
+                    charPos[1] -= tileSize;
+            }
+            else if (newState.IsKeyDown(Keys.S))
+            {
+                if (!oldState.IsKeyDown(Keys.S))
+                    charPos[1] += tileSize;
+            }
+            else if (newState.IsKeyDown(Keys.A))
+            {
+                if (!oldState.IsKeyDown(Keys.A))
+                    charPos[0] -= tileSize;
+            }
+            else if (newState.IsKeyDown(Keys.D))
+            {
+                if (!oldState.IsKeyDown(Keys.D))
+                    charPos[0] += tileSize;
+            }
+
+            oldState = newState;
+                
+            Console.WriteLine("X: " + charPos[0] + "; Y: " + charPos[1]);
 
             base.Update(gameTime);
         }
@@ -95,16 +147,36 @@ namespace GameName1
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             spriteBatch.Begin();
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
-                {
-                    spriteBatch.Draw(tiles[level[i, j]], new Rectangle(i * 100, j * 100, 100, 100), Color.White);
-                }
-            }
+
+            DrawVisibleMap();
+
+            spriteBatch.Draw(hero, new Rectangle(charPos[0], charPos[1], tileSize, tileSize), Color.White);
             spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
+        #region CustomMethods
+
+        protected void DrawVisibleMap()
+        {
+            int i = 0;
+            int j = 0;
+            while(i < 9)
+            {
+                int tileX = (charPos[0] / tileSize) - 4 + i;
+                while(j < 9)
+                {
+                    int tileY = (charPos[1] / tileSize) - 4 + j;
+                    if (tileX >= 0 && tileX < level.GetLength(0) && tileY >= 0 && tileY < level.GetLength(1))
+                        spriteBatch.Draw(tiles[level[tileX, tileY]], new Rectangle(i * tileSize, j * tileSize, tileSize, tileSize), Color.White);
+                    j++;
+                }
+                i++;
+                j = 0;
+            }
+        }
+
+        #endregion
     }
 }
